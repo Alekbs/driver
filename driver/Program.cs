@@ -54,10 +54,10 @@ namespace Driver
 
                 short leftThumbX = ConvertByteToShortAxis(data[1]);
                 short leftThumbY = 0;
+                
 
-
-                virtualController.UpdateControllerState(
-                    Xbox360Button.RightThumb,
+                virtualController.UpdateControllerStateWeel(
+                    
                     rightThumbPressed,
                     leftThumbX,
                     leftThumbY,
@@ -69,15 +69,25 @@ namespace Driver
             // Пример для джойстика – можно комбинировать данные с руля или обрабатывать отдельно.
             joyProcessor.OnJoyDataProcessed += (data) =>
             {
+                
+
+
+
+
+
+                short rightThumbX = ConvertByteToShortAxisJoy(data[1]);
+                short rightThumbY = ConvertByteToShortAxisJoy((byte)(255 - data[2]));
                 Console.WriteLine(data[5]);
                 bool rightThumbPressed = data[4] == 0x20;
-
+                virtualController.UpdateControllerStateJoy(
+                    rightThumbX,
+                    rightThumbY);
                 // Если требуется, здесь можно обновлять дополнительные элементы контроллера.
                 // Например, обновлять правый стик или другой набор кнопок.
             };
 
             // Запускаем чтение данных в отдельных потоках
-            var wheelThread = new Thread(() =>
+            var wheelThread = new Thread( () =>
             {
                 while (true)
                 {
@@ -86,11 +96,12 @@ namespace Driver
                     {
                         wheelProcessor.ProcessInput(data.Data);
                     }
-                    Thread.Sleep(10);
+                    
+
                 }
             });
 
-            var joyThread = new Thread(() =>
+            var joyThread = new Thread( () =>
             {
                 while (true)
                 {
@@ -99,7 +110,8 @@ namespace Driver
                     {
                         joyProcessor.ProcessInput(data.Data);
                     }
-                    Thread.Sleep(10);
+                    
+
                 }
             });
 
@@ -122,6 +134,21 @@ namespace Driver
             short axisValue = (short)(-32768 + normalized * 65535);
             return axisValue;
         }
-
+        static short ConvertByteToShortAxisJoy(byte value)
+        {
+            byte x = value; // или другой индекс, где хранится значение
+            byte result;
+            if (x >= 0x80)  // x от 0x80 до 0xFF
+            {
+                // При x = 0x80 → 0, при x = 0xFF → 127
+                result = (byte)(x - 0x80);
+            }
+            else  // x от 0x00 до 0x7F
+            {
+                // При x = 0x00 → 128, при x = 0x7F → 255
+                result = (byte)(0x80 + x);
+            }
+            return ConvertByteToShortAxis(result);
+        }
     }
 }

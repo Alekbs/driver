@@ -27,20 +27,28 @@ namespace Driver.Virtual
             FeedbackReceived?.Invoke(e.LargeMotor, e.SmallMotor);
         }
 
-        public void UpdateControllerState(Xbox360Button button, bool buttonPressed, short leftThumbX, short leftThumbY, byte leftTrigger, byte rightTrigger)
+        public void UpdateControllerStateWeel( bool buttonPressed, short leftThumbX, short leftThumbY, byte leftTrigger, byte rightTrigger)
         {
             // Устанавливаем состояние кнопки
             //Console.WriteLine($"Кнопка {button} = {buttonPressed}");
-            _controller.SetButtonState(button, buttonPressed);
+            _controller.SetButtonState(Xbox360Button.Right, buttonPressed);
 
 
             _controller.SetAxisValue(Xbox360Axis.LeftThumbX, leftThumbX);
             _controller.SetAxisValue(Xbox360Axis.LeftThumbY, leftThumbY);
-            _controller.SetButtonState(Xbox360Button.LeftShoulder, buttonPressed);
 
             // Устанавливаем значение левого триггера
             _controller.SetSliderValue(Xbox360Slider.LeftTrigger, leftTrigger);
             _controller.SetSliderValue(Xbox360Slider.RightTrigger, rightTrigger);
+        }
+
+        public void UpdateControllerStateJoy(short rightThumbX, short rightThumbY)
+        {
+
+
+            _controller.SetAxisValue(Xbox360Axis.RightThumbX, rightThumbX);
+            _controller.SetAxisValue(Xbox360Axis.RightThumbY, rightThumbY);
+
         }
 
         public void Dispose()
