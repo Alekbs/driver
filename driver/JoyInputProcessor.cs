@@ -2,14 +2,15 @@
 
 namespace Driver.Input
 {
-    public class JoyInputProcessor : InputProcessor
+    public class JoyInputProcessor
     {
-        public event Action<byte[]> OnJoyDataProcessed;
+        public event Action<sbyte[]> OnJoyDataProcessed;
 
-        public override void ProcessInput(byte[] data)
+        public void ProcessInput(sbyte[] data)
         {
             // Преобразование и обработка данных от джойстика
-            //Console.WriteLine(BitConverter.ToString(data));
+
+            //Console.WriteLine(); // Переход на новую строку
             OnJoyDataProcessed?.Invoke(data);
         }
     }

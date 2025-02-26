@@ -1,13 +1,31 @@
 ﻿using HidLibrary;
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace Driver.Input
 {
+    class HamaV18
+    {
+        private const string DllName = "hama_v18.dll"; // Имя вашей библиотеки
+
+        // Импортируем функцию InitWheel из DLL
+        [DllImport(DllName)]
+        public static extern int InitWheel();
+
+        // Импортируем функцию ReadWheelData из DLL
+        [DllImport(DllName)]
+        public static extern int ReadWheelData(byte[] buffer, int size);
+
+        // Импортируем функцию CloseWheel из DLL
+        [DllImport(DllName)]
+        public static extern void CloseWheel();
+    }
     public class HidDeviceManager
     {
         public HidDevice WheelDevice { get; private set; }
         public HidDevice JoyDevice { get; private set; }
+
 
         public bool InitializeDevices()
         {
@@ -33,6 +51,14 @@ namespace Driver.Input
                 return false;
             }
             Console.WriteLine("Устройства успешно открыты.");
+            int initResult = HamaV18.InitWheel();
+            if (initResult == -1)
+            {
+                Console.WriteLine("Не удалось инициализировать устройство.");
+                return false;
+            }
+            // Буфер для данных
+            Console.WriteLine("Устройство инициализировано.");
             return true;
         }
     }

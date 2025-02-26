@@ -11,7 +11,9 @@ namespace Driver.Input
             // Преобразование и обработка данных от руля
             // Можно добавить разбор конкретных байтов, формирование структуры и т.д.
             //Console.WriteLine("Обработка данных руля.");
-            //Console.WriteLine(BitConverter.ToString(data));
+
+
+            Console.WriteLine(); // Переход на новую строку
             OnWheelDataProcessed?.Invoke(data);
         }
     }

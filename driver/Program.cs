@@ -5,13 +5,25 @@ using Driver.Virtual;
 using Driver.Feedback;
 using HidLibrary;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections;
 
 namespace Driver
 {
+    
     class Program
     {
+        private static DateTime? _joyTimeStart;
+        private static DateTime? _wheelTimeStart;
+
+            
         static void Main(string[] args)
         {
+            
+
+
+ 
             // Инициализируем устройства
             var deviceManager = new HidDeviceManager();
             if (!deviceManager.InitializeDevices())
@@ -38,29 +50,55 @@ namespace Driver
             // Подписываемся на события обработки данных от руля
             wheelProcessor.OnWheelDataProcessed += (data) =>
             {
+                if (_wheelTimeStart != null)
+                {
+                    Console.WriteLine($"Wheel time processed: {(DateTime.Now - _wheelTimeStart).Value.TotalMilliseconds}");
+                }
 
                 // Пример обработки данных. Если data[7] == 0x1F, считаем, что кнопка LeftShoulder нажата.
-                bool rightThumbPressed = data[6] == 0x1F;
+                bool rightshoulder = (data[5] & 0x20) != 0; 
+                bool leftshoulder = (data[5] & 0x10) != 0;
+                // Проверяем состояние кнопок, используя биты в data[5].
+                // Инициализация состояния кнопок
+                bool up = ((data[5] & 15)  ) == 0;
+                bool right = (data[5] & 15) == 2;  
+                bool down = (data[5] & 15) == 4;   
+                bool left = (data[5] & 15) == 6;  
+
+                // Если 4-й бит установлен (кнопки не нажаты), сбрасываем все кнопки
+                if ((data[5] & 0x08) != 0)
+                {
+                    up = down = left = right = false;
+                }
+
+                // Вывод состояния кнопок
+                Console.WriteLine($"up = {up}, down = {down}, left = {left}, right = {right}");
+
+
 
                 // Обработка педалей
                 // Если педаль не нажата, значение равно 0x80.
                 // Для тормоза (левый триггер): 0x80 -> 0 (нет нажатия), 0xFF -> 255 (полностью нажато)
-                byte rawBrake =data[2];
+                byte rawBrake =data[1];
                 byte leftTrigger = (byte)Math.Clamp((rawBrake - 0x80) * (255.0 / (0xFF - 0x80)), 0, 255);
 
                 // Для газа (правый триггер): 0x80 -> 0 (нет нажатия), 0x00 -> 255 (полностью нажато)
-                byte rawGas = data[2];
+                byte rawGas = data[1];
                 byte rightTrigger = (byte)Math.Clamp((0x80 - rawGas) * (255.0 / 0x80), 0, 255);
 
-                short leftThumbX = ConvertByteToShortAxis(data[1]);
+                short leftThumbX = ConvertByteToShortAxis(data[0]);
                 short leftThumbY = 0;
                 
 
                 virtualController.UpdateControllerStateWeel(
                     
-                    rightThumbPressed,
+                    rightshoulder,
+                    leftshoulder,
+                    up,
+                    down,
+                    left,
+                    right,
                     leftThumbX,
-                    leftThumbY,
                     leftTrigger,
                     rightTrigger);
                     
@@ -70,60 +108,77 @@ namespace Driver
             joyProcessor.OnJoyDataProcessed += (data) =>
             {
                 
-
-
-
-
+                if (_joyTimeStart != null)
+                {
+                    Console.WriteLine($"Joy time processed: {(DateTime.Now - _joyTimeStart).Value.TotalMilliseconds}");
+                }
 
                 short rightThumbX = ConvertByteToShortAxisJoy(data[1]);
-                short rightThumbY = ConvertByteToShortAxisJoy((byte)(255 - data[2]));
-                Console.WriteLine(data[5]);
-                bool rightThumbPressed = data[4] == 0x20;
+                short leftThumbY = ConvertByteToShortAxisJoy((sbyte)(255 - data[3]));
+                short rightThumbY = ConvertByteToShortAxisJoy((sbyte)(255 - data[2]));
+                //Console.WriteLine(data[5]);
+                bool rightThumb = (data[5] & 0x10) != 0;
+                Console.WriteLine($"rightThumb = {rightThumb}");
+                bool leftThumb = (data[5] & 0x20) != 0; 
+                Console.WriteLine($"leftThumb = {leftThumb}");
+                bool buttonA = (data[6] & 0x01) != 0;  // Проверка 1-го бита (00000001)
+                bool buttonB = (data[6] & 0x02) != 0;  // Проверка 2-го бита (00000010)
+                bool buttonX = (data[6] & 0x04) != 0;  // Проверка 3-го бита (00000100)
+                bool buttonY = (data[6] & 0x08) != 0;  // Проверка 4-го бита (00001000)
+
+
                 virtualController.UpdateControllerStateJoy(
                     rightThumbX,
-                    rightThumbY);
+                    rightThumbY,
+                    leftThumbY,
+                    rightThumb,
+                    leftThumb,
+                    buttonA,
+                    buttonB,
+                    buttonX,
+                    buttonY);
                 // Если требуется, здесь можно обновлять дополнительные элементы контроллера.
                 // Например, обновлять правый стик или другой набор кнопок.
             };
-
             // Запускаем чтение данных в отдельных потоках
-            var wheelThread = new Thread( () =>
+            byte[] buffer = new byte[64];  // Размер буфера может быть изменен в зависимости от данных устройства
+            byte[] dataw = new byte[8];
+            var wheelThread = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
-                    var data = deviceManager.WheelDevice.Read();
-                    if (data.Data.Length > 0)
-                    {
-                        wheelProcessor.ProcessInput(data.Data);
-                    }
+                    // Чтение данных с устройства
                     
+                    int bytesRead = HamaV18.ReadWheelData(buffer, buffer.Length);
+                    // Копируем считанные данные в массив data
+                    Array.Copy(buffer, dataw, bytesRead);
+                    wheelProcessor.ProcessInput(dataw);
+
 
                 }
-            });
+            },TaskCreationOptions.LongRunning);
 
-            var joyThread = new Thread( () =>
+            var joyThread = Task.Factory.StartNew(async () =>
             {
                 while (true)
                 {
                     var data = deviceManager.JoyDevice.Read();
                     if (data.Data.Length > 0)
                     {
-                        joyProcessor.ProcessInput(data.Data);
+                        _joyTimeStart = DateTime.Now;
+                        byte[] byteArray = data.Data; // Ваш исходный массив byte[]
+                        sbyte[] sbyteArray = byteArray.Select(b => (sbyte)b).ToArray();
+                        joyProcessor.ProcessInput(sbyteArray);
                     }
                     
 
                 }
-            });
+            }, TaskCreationOptions.LongRunning);
 
-            wheelThread.Start();
-            joyThread.Start();
+         
 
-            Console.WriteLine("Нажмите Enter для выхода...");
+            //Console.WriteLine("Нажмите Enter для выхода...");
             Console.ReadLine();
-
-            // Остановка потоков – рекомендуется использовать корректное завершение, а не Abort.
-            wheelThread.Interrupt();
-            joyThread.Interrupt();
         }
         // Преобразование байта (0-255) в диапазон short (-32768 ... 32767)
         static short ConvertByteToShortAxis(byte value)
@@ -134,21 +189,9 @@ namespace Driver
             short axisValue = (short)(-32768 + normalized * 65535);
             return axisValue;
         }
-        static short ConvertByteToShortAxisJoy(byte value)
+        static short ConvertByteToShortAxisJoy(sbyte value)
         {
-            byte x = value; // или другой индекс, где хранится значение
-            byte result;
-            if (x >= 0x80)  // x от 0x80 до 0xFF
-            {
-                // При x = 0x80 → 0, при x = 0xFF → 127
-                result = (byte)(x - 0x80);
-            }
-            else  // x от 0x00 до 0x7F
-            {
-                // При x = 0x00 → 128, при x = 0x7F → 255
-                result = (byte)(0x80 + x);
-            }
-            return ConvertByteToShortAxis(result);
+            return (short)(value * 256);
         }
     }
 }

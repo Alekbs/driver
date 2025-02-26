@@ -27,27 +27,35 @@ namespace Driver.Virtual
             FeedbackReceived?.Invoke(e.LargeMotor, e.SmallMotor);
         }
 
-        public void UpdateControllerStateWeel( bool buttonPressed, short leftThumbX, short leftThumbY, byte leftTrigger, byte rightTrigger)
+        public void UpdateControllerStateWeel( bool rightshoulder, bool leftshoulder, bool up, bool down, bool left, bool right, short leftThumbX, byte leftTrigger, byte rightTrigger)
         {
             // Устанавливаем состояние кнопки
             //Console.WriteLine($"Кнопка {button} = {buttonPressed}");
-            _controller.SetButtonState(Xbox360Button.Right, buttonPressed);
-
+            _controller.SetButtonState(Xbox360Button.RightShoulder, rightshoulder);
+            _controller.SetButtonState(Xbox360Button.LeftShoulder, leftshoulder);
+            _controller.SetButtonState(Xbox360Button.Up, up);
+            _controller.SetButtonState(Xbox360Button.Down, down);
+            _controller.SetButtonState(Xbox360Button.Left, left);
+            _controller.SetButtonState(Xbox360Button.Right, right);
 
             _controller.SetAxisValue(Xbox360Axis.LeftThumbX, leftThumbX);
-            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, leftThumbY);
-
             // Устанавливаем значение левого триггера
             _controller.SetSliderValue(Xbox360Slider.LeftTrigger, leftTrigger);
             _controller.SetSliderValue(Xbox360Slider.RightTrigger, rightTrigger);
         }
 
-        public void UpdateControllerStateJoy(short rightThumbX, short rightThumbY)
+        public void UpdateControllerStateJoy(short rightThumbX, short rightThumbY, short leftThumbY, bool rightThumb, bool leftThumb, bool buttonA, bool buttonB, bool buttonX, bool buttonY)
         {
 
-
+            _controller.SetAxisValue(Xbox360Axis.LeftThumbY, leftThumbY);
             _controller.SetAxisValue(Xbox360Axis.RightThumbX, rightThumbX);
             _controller.SetAxisValue(Xbox360Axis.RightThumbY, rightThumbY);
+            _controller.SetButtonState(Xbox360Button.RightThumb, rightThumb);
+            _controller.SetButtonState(Xbox360Button.LeftThumb, leftThumb);
+            _controller.SetButtonState(Xbox360Button.A, buttonA);
+            _controller.SetButtonState(Xbox360Button.B, buttonB);
+            _controller.SetButtonState(Xbox360Button.X, buttonX);
+            _controller.SetButtonState(Xbox360Button.Y, buttonY);
 
         }
 
