@@ -14,8 +14,7 @@ namespace Driver
     
     class Program
     {
-        private static DateTime? _joyTimeStart;
-        private static DateTime? _wheelTimeStart;
+
 
             
         static void Main(string[] args)
@@ -50,10 +49,7 @@ namespace Driver
             // Подписываемся на события обработки данных от руля
             wheelProcessor.OnWheelDataProcessed += (data) =>
             {
-                if (_wheelTimeStart != null)
-                {
-                    Console.WriteLine($"Wheel time processed: {(DateTime.Now - _wheelTimeStart).Value.TotalMilliseconds}");
-                }
+
 
                 // Пример обработки данных. Если data[7] == 0x1F, считаем, что кнопка LeftShoulder нажата.
                 bool rightshoulder = (data[5] & 0x20) != 0; 
@@ -71,8 +67,6 @@ namespace Driver
                     up = down = left = right = false;
                 }
 
-                // Вывод состояния кнопок
-                Console.WriteLine($"up = {up}, down = {down}, left = {left}, right = {right}");
 
 
 
@@ -108,19 +102,15 @@ namespace Driver
             joyProcessor.OnJoyDataProcessed += (data) =>
             {
                 
-                if (_joyTimeStart != null)
-                {
-                    Console.WriteLine($"Joy time processed: {(DateTime.Now - _joyTimeStart).Value.TotalMilliseconds}");
-                }
-
+ 
                 short rightThumbX = ConvertByteToShortAxisJoy(data[1]);
                 short leftThumbY = ConvertByteToShortAxisJoy((sbyte)(255 - data[3]));
                 short rightThumbY = ConvertByteToShortAxisJoy((sbyte)(255 - data[2]));
-                //Console.WriteLine(data[5]);
+
                 bool rightThumb = (data[5] & 0x10) != 0;
-                Console.WriteLine($"rightThumb = {rightThumb}");
+
                 bool leftThumb = (data[5] & 0x20) != 0; 
-                Console.WriteLine($"leftThumb = {leftThumb}");
+
                 bool buttonA = (data[6] & 0x01) != 0;  // Проверка 1-го бита (00000001)
                 bool buttonB = (data[6] & 0x02) != 0;  // Проверка 2-го бита (00000010)
                 bool buttonX = (data[6] & 0x04) != 0;  // Проверка 3-го бита (00000100)
@@ -141,18 +131,23 @@ namespace Driver
                 // Например, обновлять правый стик или другой набор кнопок.
             };
             // Запускаем чтение данных в отдельных потоках
-            byte[] buffer = new byte[64];  // Размер буфера может быть изменен в зависимости от данных устройства
-            byte[] dataw = new byte[8];
+
             var wheelThread = Task.Factory.StartNew(async () =>
             {
+                byte[] buffer = new byte[64];  // Размер буфера может быть изменен в зависимости от данных устройства
+                byte[] dataw = new byte[8];
+                byte[] previousData = new byte[dataw.Length]; // Храним предыдущее состояние
                 while (true)
                 {
                     // Чтение данных с устройства
                     
                     int bytesRead = HamaV18.ReadWheelData(buffer, buffer.Length);
-                    // Копируем считанные данные в массив data
-                    Array.Copy(buffer, dataw, bytesRead);
-                    wheelProcessor.ProcessInput(dataw);
+                    if (bytesRead > 0 && !buffer.Take(bytesRead).SequenceEqual(previousData.Take(bytesRead)))
+                    {
+                        Array.Copy(buffer, dataw, bytesRead);
+                        Array.Copy(dataw, previousData, bytesRead);
+                        wheelProcessor.ProcessInput(dataw);
+                    }
 
 
                 }
@@ -165,7 +160,7 @@ namespace Driver
                     var data = deviceManager.JoyDevice.Read();
                     if (data.Data.Length > 0)
                     {
-                        _joyTimeStart = DateTime.Now;
+
                         byte[] byteArray = data.Data; // Ваш исходный массив byte[]
                         sbyte[] sbyteArray = byteArray.Select(b => (sbyte)b).ToArray();
                         joyProcessor.ProcessInput(sbyteArray);
