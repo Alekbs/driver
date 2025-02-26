@@ -112,8 +112,8 @@ namespace Driver
                 bool leftThumb = (data[5] & 0x20) != 0; 
 
                 bool buttonA = (data[6] & 0x01) != 0;  // Проверка 1-го бита (00000001)
-                bool buttonB = (data[6] & 0x02) != 0;  // Проверка 2-го бита (00000010)
-                bool buttonX = (data[6] & 0x04) != 0;  // Проверка 3-го бита (00000100)
+                bool buttonX = (data[6] & 0x02) != 0;  // Проверка 2-го бита (00000010)
+                bool buttonB = (data[6] & 0x04) != 0;  // Проверка 3-го бита (00000100)
                 bool buttonY = (data[6] & 0x08) != 0;  // Проверка 4-го бита (00001000)
 
 

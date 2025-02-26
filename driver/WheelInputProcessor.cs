@@ -10,7 +10,6 @@ namespace Driver.Input
         {
             // Преобразование и обработка данных от руля
             // Можно добавить разбор конкретных байтов, формирование структуры и т.д.
-            Console.WriteLine("Обработка данных руля.");
 
 
             OnWheelDataProcessed?.Invoke(data);

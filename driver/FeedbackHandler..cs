@@ -20,7 +20,7 @@ namespace Driver.Feedback
             byte amplifiedLeft = (byte)Math.Min(leftForce * 4, 0xFF);
             byte amplifiedRight = (byte)Math.Min(rightForce * 4, 0xFF);
 
-            Console.WriteLine($"Получена обратная связь: Left = {amplifiedLeft}, Right = {amplifiedRight}");
+            //Console.WriteLine($"Получена обратная связь: Left = {amplifiedLeft}, Right = {amplifiedRight}");
 
             // Пример отправки данных на руль
             byte[] wheelCommand1 = new byte[] { 0x00, 0x51, 0x00, amplifiedLeft, 0x00, amplifiedRight, 0x00, 0x00 };
